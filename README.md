@@ -7,11 +7,19 @@ The script listens to all 'influx/#' topic the broker has. Influxdb
 measurement ('table' in SQL lingo) and field ('column') can be encoded in the
 topic, like
 
-    influx/<measurement>/<field_name>/state
+    influx/<measurement>/[<tagname>/<tagvalue>/]*<field>/state
+
+which is converted into influx query like
+
+    measurement,[tagname=tagvalue]* field=msg.payload
 
 e.g.
 
-    influx/environv2/pm25/state
+    influx/environv2/room/bedroom/pm25/state
+
+becomes
+
+    environ2,room=bedroom pm25=msg.payload
 
 # Sources
 
