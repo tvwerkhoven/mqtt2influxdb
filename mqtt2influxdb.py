@@ -22,7 +22,7 @@ handler_console = logging.StreamHandler()
 my_logger.addHandler(handler_console)
 
 # create syslog handler which also shows filename in log
-handler_syslog = logging.handlers.SysLogHandler(address = '/dev/log')
+handler_syslog = logging.handlers.SysLogHandler(address = '/dev/log', facility=logging.handlers.SysLogHandler.LOG_DAEMON)
 formatter = logging.Formatter('%(filename)s: %(message)s')
 handler_syslog.setFormatter(formatter)
 my_logger.addHandler(handler_syslog)
