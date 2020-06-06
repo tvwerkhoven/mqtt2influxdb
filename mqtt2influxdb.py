@@ -13,6 +13,7 @@ import requests
 import logging
 import logging.handlers
 import yaml
+import os, sys
 
 # Init logger
 # https://docs.python.org/3/howto/logging.html#configuring-logging
@@ -33,7 +34,9 @@ my_logger.addHandler(handler_syslog)
 
 my_logger.info("Starting mqtt2influxdb...")
 
-with open("config.yaml", 'r') as stream:
+# Load config from same dir as file. hacky? yes.
+# https://www.tutorialspoint.com/How-to-open-a-file-in-the-same-directory-as-a-Python-script
+with open(os.path.join(sys.path[0], "config.yaml"), 'r') as stream:
     try:
         data = yaml.safe_load(stream)
         MQTT_SERVER_HOST = data['mqtt2influxdb']['mqqt_server_host']
