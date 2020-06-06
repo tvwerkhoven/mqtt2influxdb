@@ -14,13 +14,22 @@ import logging
 import logging.handlers
 import yaml
 
-my_logger = logging.getLogger('MyLogger')
+my_logger = logging.getLogger("MyLogger")
 my_logger.setLevel(logging.INFO)
 
-handler = logging.handlers.SysLogHandler(address = '/dev/log')
-my_logger.addHandler(handler)
+# create console handler with a higher log level
+handler_console = logging.StreamHandler()
+my_logger.addHandler(handler_console)
 
-with open("config.yasml", 'r') as stream:
+# create syslog handler which also shows filename in log
+handler_syslog = logging.handlers.SysLogHandler(address = '/dev/log')
+formatter = logging.Formatter('%(filename)s: %(message)s')
+handler_syslog.setFormatter(formatter)
+my_logger.addHandler(handler_syslog)
+
+my_logger.info("Starting mqtt2influxdb...")
+
+with open("config.yaml", 'r') as stream:
     try:
         data = yaml.safe_load(stream)
         MQTT_SERVER_HOST = data['mqtt2influxdb']['mqqt_server_host']
