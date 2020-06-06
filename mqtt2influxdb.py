@@ -14,17 +14,15 @@ import logging
 import logging.handlers
 import yaml
 
+# Init logger, defaults to console
 my_logger = logging.getLogger("MyLogger")
-my_logger.setLevel(logging.INFO)
-
-# create console handler with a higher log level
-handler_console = logging.StreamHandler()
-my_logger.addHandler(handler_console)
+my_logger.setLevel(logging.DEBUG)
 
 # create syslog handler which also shows filename in log
-handler_syslog = logging.handlers.SysLogHandler(address = '/dev/log', facility=logging.handlers.SysLogHandler.LOG_DAEMON)
+handler_syslog = logging.handlers.SysLogHandler(address = '/dev/log')
 formatter = logging.Formatter('%(filename)s: %(message)s')
 handler_syslog.setFormatter(formatter)
+handler_syslog.setLevel(logging.INFO)
 my_logger.addHandler(handler_syslog)
 
 my_logger.info("Starting mqtt2influxdb...")
