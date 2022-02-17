@@ -81,11 +81,12 @@ def parse_plugwise(msg):
 
     thisuniqueid = str.lower(payloadjson['mac'])
     thissource = id_sourcemap[thisuniqueid[-5:]]
-    thisenergy = float(payloadjson['cum_energy'])
+    # Convert from Wh to Joule
+    thisenergy = int(payloadjson['cum_energy']*3600)
     thisdate = int(payloadjson['ts'])
 
     # plugwise2mqtt/state/energy/000D6F0002588E41 {"typ":"pwenergy","ts":1645123620,"mac":"000D6F0002588E41","power":0.0000,"energy":0.0000,"cum_energy":23816.2021,"interval":1}
-    query = f"energyv3,quantity='electricity',type='consumption',uniqueid='{thisuniqueid}',source='{thissource}' value={thisenergy} {thisdate}"
+    query = f"energyv3,quantity=electricity,type=consumption,uniqueid={thisuniqueid},source={thissource} value={thisenergy} {thisdate}"
 
     my_logger.info(query)
     r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10)
