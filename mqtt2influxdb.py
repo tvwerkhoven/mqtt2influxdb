@@ -14,6 +14,7 @@ import logging
 import logging.handlers
 import yaml
 import os, sys
+import json
 
 # Init logger
 # https://docs.python.org/3/howto/logging.html#configuring-logging
@@ -36,6 +37,7 @@ my_logger.info("Starting mqtt2influxdb...")
 
 # Load config from same dir as file. hacky? yes.
 # https://www.tutorialspoint.com/How-to-open-a-file-in-the-same-directory-as-a-Python-script
+# with open("./config.yaml", 'r') as stream:
 with open(os.path.join(sys.path[0], "config.yaml"), 'r') as stream:
     try:
         data = yaml.safe_load(stream)
@@ -46,15 +48,53 @@ with open(os.path.join(sys.path[0], "config.yaml"), 'r') as stream:
     except yaml.YAMLError as exc:
         my_logger.exception('Could not load yaml file')
 
-def persists(msg):
+def do_connect(client, mosq, obj, rc):
+    if rc == 0:
+        client.subscribe("influx/#")
+        client.subscribe("plugwise2mqtt/#")
+    else:
+        my_logger.error("Connection failed")
+
+def parse_message(client, userdata, msg):
+    msgarr = msg.topic.split("/")
+
+    if msgarr[0] == 'influx':
+        parse_esphome(msg)
+    elif msgarr[0] == 'plugwise2mqtt':
+        parse_plugwise(msg)
+
+def parse_plugwise(msg):
+    # msg.topic should be like 
+    # plugwise2mqtt/state/energy/000D6F0002588E41
+    # msg.payload should be like
+    # {"typ":"pwenergy","ts":1645123620,"mac":"000D6F0002588E41","power":0.0000,"energy":0.0000,"cum_energy":23816.2021,"interval":1}, which is 
+    # 
+    # energyv3,quantity='electricity',type='consumption',source=,uniqueid=000D6F0002588E41 value=msg.payload.cum_energy msg.payload.ts
+
+    id_sourcemap = {
+        '88e41':'thermomix',
+        '86bc9':'washingmachine',
+        '81600':'dishwasher',
+        '2664c':'oven'
+    }
+    payloadjson = json.loads(msg.payload)
+
+    thisuniqueid = str.lower(payloadjson['mac'])
+    thissource = id_sourcemap[thisuniqueid[-5:]]
+    thisenergy = float(payloadjson['cum_energy'])
+    thisdate = int(payloadjson['ts'])
+
+    # plugwise2mqtt/state/energy/000D6F0002588E41 {"typ":"pwenergy","ts":1645123620,"mac":"000D6F0002588E41","power":0.0000,"energy":0.0000,"cum_energy":23816.2021,"interval":1}
+    query = f"energyv3,quantity='electricity',type='consumption',uniqueid='{thisuniqueid}',source='{thissource}' value={thisenergy} {thisdate}"
+
+    my_logger.info(query)
+    r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10)
+
+def parse_esphome(msg):
     # msg.topic should be like 
     # influx/<measurement>/[<tagname>/<tagvalue>/]*<field>/state, which is 
     # converted into 
     # measurement,[tagname=tagvalue]* field=msg.payload
-
-    # Old code without tags:
-    # _, measurement, field, _ = msg.topic.split("/")
-    # query = "{} {}={}".format(measurement, field, float(msg.payload))
 
     msgarr = msg.topic.split("/")
 
@@ -89,8 +129,8 @@ def persists(msg):
 client = mqtt.Client()
 client.username_pw_set(MQTT_CLIENT_USERNAME, MQTT_CLIENT_PASSWD)
 
-client.on_connect = lambda self, mosq, obj, rc: self.subscribe("influx/#")
-client.on_message = lambda client, userdata, msg: persists(msg)
+client.on_connect = do_connect
+client.on_message = parse_message
 
 my_logger.info("Connecting to {}:1883".format(MQTT_SERVER_HOST))
 client.connect(MQTT_SERVER_HOST, 1883, 60)
