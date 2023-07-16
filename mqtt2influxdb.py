@@ -46,6 +46,10 @@ with open(os.path.join(sys.path[0], "config.yaml"), 'r') as stream:
         MQTT_CLIENT_USERNAME = data['mqtt2influxdb']['mqqt_client_username']
         MQTT_CLIENT_PASSWD = data['mqtt2influxdb']['mqqt_client_passwd']
         INFLUX_WRITE_URI = data['mqtt2influxdb']['influx_write_uri']
+
+        # Influxdb settings URI
+        INFLUX_USER = data['influx_username']
+        INFLUX_PASSWD = data['influx_password']
     except yaml.YAMLError as exc:
         my_logger.exception('Could not load config from yaml file: {}'.format(exc))
 
