@@ -17,6 +17,7 @@ import logging.handlers
 import yaml
 import os, sys
 import json
+import time
 
 # Init logger
 # https://docs.python.org/3/howto/logging.html#configuring-logging
@@ -139,6 +140,26 @@ client.username_pw_set(MQTT_CLIENT_USERNAME, MQTT_CLIENT_PASSWD)
 
 client.on_connect = do_connect
 client.on_message = parse_message
+
+# TODO: ensure mqtt and influxdb are up
+# https://stackoverflow.com/questions/54619868/http-requests-post-timeout
+n=1
+while True:
+    try:
+        requests.post(INFLUX_QUERY_URI, data="select * from energyv3 limit 1", timeout=10, auth=(INFLUX_USER, INFLUX_PASSWD))
+        # requests.post("http://localhost:1234", data="select * from energyv3 limit 1", timeout=10)
+    except requests.ConnectionError as e:
+        time.sleep(n)
+        n += 1
+        my_logger.warn("Could not connect to InfluxDB (ConnectionError), retrying.")
+    except requests.Timeout as e:
+        time.sleep(n)
+        n += 1
+        my_logger.warn("Could not connect to InfluxDB (Timeout), retrying.")
+    finally:
+        if n > 2:
+            my_logger.error("Could not connect to InfluxDB, stopping.")
+            raise requests.ConnectionError("Could not connect to InfluxDB, stopping")
 
 my_logger.info("Connecting to {}:1883".format(MQTT_SERVER_HOST))
 client.connect(MQTT_SERVER_HOST, 1883, 60)
