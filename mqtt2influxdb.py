@@ -11,7 +11,8 @@
 #
 # Alternatively, run using systemd after influxdb & mosquitto are up
 # - https://stackoverflow.com/questions/21830670/start-systemd-service-after-specific-service
-# /etc/systemd/system/mqtt2influxdb.service
+# - https://unix.stackexchange.com/questions/47695/how-to-write-startup-script-for-systemd
+# /etc/systemd/system/mqtt2influxdb.service && systemctl enable mqtt2influxdb.service
 # [Unit]
 # Description=mqtt2influxdb
 # After=influxdb.service mosquitto.service
