@@ -31,6 +31,7 @@ handler_syslog = logging.handlers.SysLogHandler(address = '/dev/log')
 formatter = logging.Formatter('%(filename)s: %(message)s')
 handler_syslog.setFormatter(formatter)
 handler_syslog.setLevel(logging.INFO)
+# handler_syslog.setLevel(logging.WARNING)
 my_logger.addHandler(handler_syslog)
 
 my_logger.info("Starting mqtt2influxdb...")
@@ -46,14 +47,14 @@ with open(os.path.join(sys.path[0], "config.yaml"), 'r') as stream:
         MQTT_CLIENT_PASSWD = data['mqtt2influxdb']['mqqt_client_passwd']
         INFLUX_WRITE_URI = data['mqtt2influxdb']['influx_write_uri']
     except yaml.YAMLError as exc:
-        my_logger.exception('Could not load yaml file')
+        my_logger.exception('Could not load config from yaml file: {}'.format(exc))
 
 def do_connect(client, mosq, obj, rc):
     if rc == 0:
         client.subscribe("influx/#")
         client.subscribe("plugwise2mqtt/#")
     else:
-        my_logger.error("Connection failed")
+        my_logger.error("Connection to broker failed")
 
 def parse_message(client, userdata, msg):
     msgarr = msg.topic.split("/")
@@ -88,8 +89,8 @@ def parse_plugwise(msg):
     # plugwise2mqtt/state/energy/000D6F0002588E41 {"typ":"pwenergy","ts":1645123620,"mac":"000D6F0002588E41","power":0.0000,"energy":0.0000,"cum_energy":23816.2021,"interval":1}
     query = f"energyv3,quantity=electricity,type=consumption,uniqueid={thisuniqueid},source={thissource} value={thisenergy} {thisdate}"
 
-    my_logger.info(query)
-    r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10)
+    my_logger.debug(query)
+    r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10, auth=(INFLUX_USER, INFLUX_PASSWD))
 
 def parse_esphome(msg):
     # msg.topic should be like 
@@ -123,8 +124,8 @@ def parse_esphome(msg):
 
     query += " {}={}".format(i_field, float(msg.payload))
 
-    my_logger.info(query)
-    r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10)
+    my_logger.debug(query)
+    r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10, auth=(INFLUX_USER, INFLUX_PASSWD))
 
 
 client = mqtt.Client()
@@ -138,3 +139,5 @@ client.connect(MQTT_SERVER_HOST, 1883, 60)
 
 my_logger.info("Starting listen loop forever...")
 client.loop_forever()
+
+my_logger.warn("Listen loop stopped, this should not happen.")
