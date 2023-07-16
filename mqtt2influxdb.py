@@ -8,6 +8,21 @@
 # @reboot <path>/mqtt2influxdb.py 
 # Debug with 
 # @reboot ( <path>/mqtt2influxdb.py ) >> /tmp/mqtt2influxdb-debug.log 2>&1
+#
+# Alternatively, run using systemd after influxdb & mosquitto are up
+# - https://stackoverflow.com/questions/21830670/start-systemd-service-after-specific-service
+# -
+# /etc/systemd/system/mqtt2influxdb.service
+# [Unit]
+# Description=mqtt2influxdb
+# After=influxdb.service mosquitto.service
+#
+# [Service]
+# Type=oneshot
+# ExecStart=/home/tim/workers/mqtt2influxdb/mqtt2influxdb.py
+#
+# [Install]
+# WantedBy=multi-user.target
 
 import paho.mqtt.client as mqtt
 import datetime
@@ -141,26 +156,6 @@ client.username_pw_set(MQTT_CLIENT_USERNAME, MQTT_CLIENT_PASSWD)
 
 client.on_connect = do_connect
 client.on_message = parse_message
-
-# TODO: ensure mqtt and influxdb are up
-# https://stackoverflow.com/questions/54619868/http-requests-post-timeout
-n=1
-while True:
-    try:
-        requests.post(INFLUX_QUERY_URI, data="select * from energyv3 limit 1", timeout=10, auth=(INFLUX_USER, INFLUX_PASSWD))
-        # requests.post("http://localhost:1234", data="select * from energyv3 limit 1", timeout=10)
-    except requests.ConnectionError as e:
-        time.sleep(n)
-        n += 1
-        my_logger.warn("Could not connect to InfluxDB (ConnectionError), retrying.")
-    except requests.Timeout as e:
-        time.sleep(n)
-        n += 1
-        my_logger.warn("Could not connect to InfluxDB (Timeout), retrying.")
-    finally:
-        if n > 2:
-            my_logger.error("Could not connect to InfluxDB, stopping.")
-            raise requests.ConnectionError("Could not connect to InfluxDB, stopping")
 
 my_logger.info("Connecting to {}:1883".format(MQTT_SERVER_HOST))
 client.connect(MQTT_SERVER_HOST, 1883, 60)
