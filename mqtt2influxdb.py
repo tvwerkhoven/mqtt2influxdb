@@ -6,6 +6,8 @@
 #
 # Start in crontab as 
 # @reboot <path>/mqtt2influxdb.py 
+# Debug with 
+# @reboot ( <path>/mqtt2influxdb.py ) >> /tmp/mqtt2influxdb-debug.log 2>&1
 
 import paho.mqtt.client as mqtt
 import datetime
