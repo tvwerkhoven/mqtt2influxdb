@@ -149,7 +149,7 @@ def parse_esphome(msg):
     for tag_key, tag_val in zip(msgarr[::2], msgarr[1::2]):
         query += ",{}={}".format(tag_key, tag_val)
 
-    query += " {}={}".format(i_field, float(re.sub("[^0-9.\-]","", msg.payload)))
+    query += " {}={}".format(i_field, float(re.sub("[^0-9.\-]","", msg.payload.decode('utf-8'))))
 
     my_logger.debug(query)
     r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10, auth=(INFLUX_USER, INFLUX_PASSWD))
