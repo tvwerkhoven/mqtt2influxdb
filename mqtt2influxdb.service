@@ -1,13 +1,16 @@
 [Unit]
-Description=mqtt2influxdb bridges mqtt to influxdb
+Description=mqtt2influxdb
 After=influxdb.service mosquitto.service
 
 [Service]
 User=tim
 Group=tim
-Type=oneshot
+Type=simple
+WorkingDirectory=/home/tim/workers/mqtt2influxdb/
 ExecStart=/home/tim/workers/mqtt2influxdb/mqtt2influxdb.py
 Restart=on-failure
+RestartSec=10
+ForwardToConsole=
 
 [Install]
 WantedBy=multi-user.target
