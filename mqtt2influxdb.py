@@ -36,11 +36,12 @@ import yaml
 import os, sys
 import json
 import time
+import re
 
 # Init logger
 # https://docs.python.org/3/howto/logging.html#configuring-logging
 my_logger = logging.getLogger("MyLogger")
-my_logger.setLevel(logging.DEBUG)
+my_logger.setLevel(logging.WARNING)
 
 # create console handler and set level to debug
 handler_stream = logging.StreamHandler()
@@ -51,8 +52,8 @@ my_logger.addHandler(handler_stream)
 handler_syslog = logging.handlers.SysLogHandler(address = '/dev/log')
 formatter = logging.Formatter('%(filename)s: %(message)s')
 handler_syslog.setFormatter(formatter)
-handler_syslog.setLevel(logging.INFO)
-# handler_syslog.setLevel(logging.WARNING)
+#handler_syslog.setLevel(logging.INFO)
+handler_syslog.setLevel(logging.WARNING)
 my_logger.addHandler(handler_syslog)
 
 my_logger.info("Starting mqtt2influxdb...")
@@ -148,7 +149,7 @@ def parse_esphome(msg):
     for tag_key, tag_val in zip(msgarr[::2], msgarr[1::2]):
         query += ",{}={}".format(tag_key, tag_val)
 
-    query += " {}={}".format(i_field, float(msg.payload))
+    query += " {}={}".format(i_field, float(re.sub("[^0-9.\-]","", msg.payload)))
 
     my_logger.debug(query)
     r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10, auth=(INFLUX_USER, INFLUX_PASSWD))
