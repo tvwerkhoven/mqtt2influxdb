@@ -129,14 +129,14 @@ def parse_esphome(msg):
 
     # Check topic has even number of fields
     if (len(msgarr) % 2 != 0):
-        my_logger.warn("Malformed topic does not have even number of fields: {}".format(msg.topic))
+        my_logger.warning("Malformed topic does not have even number of fields: {}".format(msg.topic))
         return
 
     # Check topic starts with 'influx' and ends with 'state'
     i_influx = msgarr.pop(0)
     i_state = msgarr.pop()
     if (i_state != 'state' or i_influx != 'influx'):
-        my_logger.warn("Malformed topic not ending in 'state' or starting with 'influx': {}".format(msg.topic))
+        my_logger.warning("Malformed topic not ending in 'state' or starting with 'influx': {}".format(msg.topic))
         return
 
     # Get measurement & field name
@@ -167,4 +167,4 @@ client.connect(MQTT_SERVER_HOST, 1883, 60)
 my_logger.info("Starting listen loop forever...")
 client.loop_forever()
 
-my_logger.warn("Listen loop stopped, this should not happen.")
+my_logger.warning("Listen loop stopped, this should not happen.")
