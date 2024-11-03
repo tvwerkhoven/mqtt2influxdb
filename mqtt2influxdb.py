@@ -86,10 +86,14 @@ def do_connect(client, mosq, obj, rc):
 def parse_message(client, userdata, msg):
     msgarr = msg.topic.split("/")
 
-    if msgarr[0] == 'influx':
-        parse_esphome(msg)
-    elif msgarr[0] == 'plugwise2mqtt':
-        parse_plugwise(msg)
+    try:
+        if msgarr[0] == 'influx':
+            parse_esphome(msg)
+        elif msgarr[0] == 'plugwise2mqtt':
+            parse_plugwise(msg)
+    except:
+        my_logger.error('Could not parse message: {} with payload: {}'.format(msg.topic, msg.payload))
+        pass
 
 def parse_plugwise(msg):
     # msg.topic should be like 
@@ -149,7 +153,16 @@ def parse_esphome(msg):
     for tag_key, tag_val in zip(msgarr[::2], msgarr[1::2]):
         query += ",{}={}".format(tag_key, tag_val)
 
-    query += " {}={}".format(i_field, float(re.sub("[^0-9.\-]","", msg.payload.decode('utf-8'))))
+    # Check if payload is nan or empty, in which case we don't push as InfluxDB does not support nan/null.
+    p = msg.payload.decode('utf-8')
+    if p == 'nan' or p == '':
+        my_logger.warning("Topic has nan or empty payload {}".format(msg.topic))
+        return
+
+    # Strip all non-numeric data
+    p = re.sub("[^0-9.\-]","",p)
+
+    query += " {}={}".format(i_field, float(p))
 
     my_logger.debug(query)
     r = requests.post(INFLUX_WRITE_URI, data=query, timeout=10, auth=(INFLUX_USER, INFLUX_PASSWD))
